@@ -1,5 +1,4 @@
-# Autoencoder-based-anomaly-detection-for-sensor-data
-Autoencoder-based anomaly detection for sensor data using MATLAB
+# Autoencoder-based anomaly detection for sensor data using MATLAB
 
 This demo highlights how one can use an unsupervised machine learning technique based on autoencoder to detect an anomaly in sensor data (output pressure of a triplex pump). The demo also shows how a trained autoencoder can be deployed on an embedded system through automatic code generation. The advantage of autoencoders is that they can be trained to detect anomalies with data representing normal operation, i.e. you don't need data from failures.
 
