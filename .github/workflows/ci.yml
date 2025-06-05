@@ -1,0 +1,2 @@
+- name: Setup MATLAB
+  uses: matlab-actions/setup-matlab@v2.5.0
