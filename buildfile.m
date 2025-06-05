@@ -3,7 +3,6 @@ import matlab.buildtool.tasks.*
 
 plan = buildplan(localfunctions);
 
-plan("clean") = CleanTask;
 plan("check") = CodeIssuesTask;
 plan("test") = TestTask(Dependencies="check");
 
