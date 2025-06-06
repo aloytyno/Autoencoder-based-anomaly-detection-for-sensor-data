@@ -20,7 +20,7 @@ classdef detectAnomaliesFuncTest < matlab.unittest.TestCase
     methods(Test)
         function testDetectAnomaliesWithNoAnomalies(testCase)
             % Test with normal data points
-            
+            clear detectAnomalies
             data = load("autoencoder_data.mat","normaldata");
             for i = 1:length(data.normaldata)
                 anomalyidx(i) = detectAnomalies(data.normaldata(i));
@@ -31,6 +31,7 @@ classdef detectAnomaliesFuncTest < matlab.unittest.TestCase
         
         function testDetectAnomaliesWithAnomalies(testCase)
             % Test with a known anomaly
+            clear detectAnomalies
             data = load("autoencoder_data.mat","faultydata");
             for i = 1:length(data.faultydata)
                 anomalyidx(i) = detectAnomalies(data.faultydata(i));
