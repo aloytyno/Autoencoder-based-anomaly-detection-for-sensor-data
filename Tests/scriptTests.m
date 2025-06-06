@@ -4,6 +4,7 @@ classdef scriptTests < matlab.unittest.TestCase
         % Test methods
 
         function smokeTest(testCase)
+            cd("..\")
             evalin("base","AnomalyDetectionDemo")
             % Verify that a script runs to the point where variable "ax2"
             % is created
