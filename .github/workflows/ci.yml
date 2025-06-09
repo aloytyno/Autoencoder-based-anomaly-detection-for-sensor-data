@@ -16,5 +16,4 @@ jobs:
       - name: Run build
         uses: matlab-actions/run-build@v2
         with:
-          tasks: test
           test-results-junit: test-results/results.xml
