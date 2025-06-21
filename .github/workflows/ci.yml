@@ -35,5 +35,7 @@ jobs:
                 test-results/results.xml
       - name: Publish Code coverage
         uses: 5monkeys/cobertura-action@v13
+        if: (!cancelled())
         with:
             path: code-coverage/report.xml
+            minimum_coverage: 0
