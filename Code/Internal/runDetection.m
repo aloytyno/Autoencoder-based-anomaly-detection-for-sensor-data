@@ -1,3 +1,5 @@
+%% This function runs the anomaly detection one sample at a time through the time-series you specify
+
 % Preallocate
 losses = nan(100,1);
 dataall = [];
