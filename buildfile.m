@@ -13,3 +13,4 @@ plan("test") = TestTask(Dependencies="check",...
 
 plan.DefaultTasks = ["check" "test"];
 end
+
