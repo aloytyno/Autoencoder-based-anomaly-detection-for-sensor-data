@@ -11,6 +11,15 @@ plan("test") = TestTask(Dependencies="check",...
     CodeCoverageResults="code-coverage/report.xml",...
     SourceFiles={'Code/AnomalyDetectionDemo.mlx','Code/detectAnomalies.mlx'});
 
-plan.DefaultTasks = ["check" "test"];
+plan("toolbox").Dependencies="test";
+plan("toolbox").Actions=@toolboxTask;
+plan.DefaultTasks = "toolbox";
+end
+
+function toolboxTask(~)
+
+    projectFile = "AutoEncoderAnomalyDetection.prj";
+    matlab.addons.toolbox.packageToolbox(projectFile);
+
 end
 
