@@ -1,3 +1,6 @@
+permissions:
+  checks: write
+  contents: read
 name: Run test task in Build File
 on: [push]
 jobs:
