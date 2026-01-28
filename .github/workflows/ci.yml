@@ -2,7 +2,8 @@ permissions:
   checks: write
   contents: read
 name: Run test task in Build File
-on: [push]
+'on':
+  - push
 jobs:
   my-job:
     name: Run MATLAB Build
@@ -13,43 +14,97 @@ jobs:
       - name: Set up MATLAB
         uses: matlab-actions/setup-matlab@v2
         with:
-          products: >
+          products: |
             MATLAB
             Deep_Learning_Toolbox
       - name: Run build
         uses: matlab-actions/run-build@v2
+      - name: Verify build outputs (ls & find)
+        if: always()
+        shell: bash
+        run: |
+          echo "Workspace: ${{ github.workspace }}"
+          echo "PWD: $(pwd)"
+          echo "Top-level contents: :"
+          ls -la
+
+          echo "---- ls AutoEncoderAnomalyDetection ----"
+          ls -la AutoEncoderAnomalyDetection || true
+
+          echo "---- ls AutoEncoderAnomalyDetection/release ----"
+          ls -la AutoEncoderAnomalyDetection/release || true
+
+          echo "---- find any .mltbx (up to depth 8) ----"
+          find . -maxdepth 8 -type f -name "*.mltbx" -print || true
+      - name: Assert exact .mltbx exists
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          EXPECTED="${{ github.workspace }}/AutoEncoderAnomalyDetection/release/AnomalyDetectionToolbox.mltbx"
+
+          # If exact path exists, we’re good.
+          if [[ -f "$EXPECTED" ]]; then
+            echo "Found expected file: $EXPECTED"
+            exit 0
+          fi
+
+          echo "Did not find expected file at: $EXPECTED"
+          echo "Searching for any .mltbx candidates..."
+          mapfile -t CANDIDATES < <(find "${{ github.workspace }}" -maxdepth 8 -type f -name "*.mltbx" | sort)
+
+          if [[ ${#CANDIDATES[@]} -eq 0 ]]; then
+            echo "No .mltbx files found anywhere under the workspace."
+            exit 1
+          fi
+
+          echo "Found ${#CANDIDATES[@]} candidate(s): :"
+          printf ' - %s\n' "${CANDIDATES[@]}"
+
+          if [[ ${#CANDIDATES[@]} -gt 1 ]]; then
+            echo "Ambiguous output (more than one .mltbx)."
+            echo "Either adjust the Buildfile to write the exact expected path, or update the upload step to use the correct file."
+            exit 1
+          fi
+
+          # Exactly one candidate—helpful hint:
+          echo "Hint: If this is the correct file, set your upload 'path: :' to:"
+          echo "  ${CANDIDATES[0]}"
+          exit 1
       - name: Upload results artifact
         uses: actions/upload-artifact@v4
         if: always()
         with:
-            name: test-results
-            path: test-results/results.xml       
+          name: test-results
+          path: test-results/results.xml
+          if-no-files-found: warn
       - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
         if: always()
-        with: 
-            name: code-coverage
-            path: code-coverage/report.xml
+        with:
+          name: code-coverage
+          path: code-coverage/report.xml
+          if-no-files-found: warn
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: (!cancelled())
         with:
-            files: |
-                test-results/results.xml
+          files: |
+            test-results/results.xml
       - name: Publish Code coverage
         uses: 5monkeys/cobertura-action@v13
         if: (!cancelled())
         with:
-            path: code-coverage/report.xml
-            minimum_coverage: 0
+          path: code-coverage/report.xml
+          minimum_coverage: 0
       - name: Upload toolbox artifact
         uses: actions/upload-artifact@v4
-        if: always()
         with:
-            name: AnomalyDetectionToolbox
-            path: AutoEncoderAnomalyDetection/release/AnomalyDetectionToolbox.mltbx
+          name: AnomalyDetectionToolbox
+          path: ${{ github.workspace }}/AutoEncoderAnomalyDetection/release/AnomalyDetectionToolbox.mltbx
+          if-no-files-found: error
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-            files: AutoEncoderAnomalyDetection/release/AnomalyDetectionToolbox.mltbx
+          files: ${{ github.workspace }}/AutoEncoderAnomalyDetection/release/AnomalyDetectionToolbox.mltbx
