@@ -1,31 +1,62 @@
 permissions:
   checks: write
   contents: read
+
 name: Run test task in Build File
-'on':
-  - push
+
+on: [push]
+
 jobs:
   my-job:
     name: Run MATLAB Build
     runs-on: ubuntu-latest
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
       - name: Set up MATLAB
         uses: matlab-actions/setup-matlab@v2
         with:
           products: |
             MATLAB
             Deep_Learning_Toolbox
+
+      # Runs the MATLAB Buildfile default target (adjust if you need a specific target)
       - name: Run build
         uses: matlab-actions/run-build@v2
+
+      # --- Normalize toolbox path: fix Windows-style backslash folder on Linux ---
+      - name: Normalize toolbox output path
+        shell: bash
+        run: |
+          set -euo pipefail
+          WS="${{ github.workspace }}"
+          BAD_DIR="${WS}/AutoEncoderAnomalyDetection\\release"   # literal backslash in the name
+          GOOD_DIR="${WS}/AutoEncoderAnomalyDetection/release"
+
+          if [[ -d "$BAD_DIR" ]]; then
+            echo "Found backslash-named directory: $BAD_DIR"
+            mkdir -p "$GOOD_DIR"
+            shopt -s nullglob
+            for f in "$BAD_DIR"/*.mltbx; do
+              echo "Moving $f -> $GOOD_DIR/"
+              mv "$f" "$GOOD_DIR/"
+            done
+            # Try to remove the bad dir if empty (ignore if not)
+            rmdir "$BAD_DIR" 2>/dev/null || true
+          else
+            echo "No backslash-named directory detected. Nothing to normalize."
+          fi
+
+      # --- Diagnostics: confirm where the .mltbx landed ---
       - name: Verify build outputs (ls & find)
         if: always()
         shell: bash
         run: |
           echo "Workspace: ${{ github.workspace }}"
           echo "PWD: $(pwd)"
-          echo "Top-level contents: :"
+          echo "Top-level contents:"
           ls -la
 
           echo "---- ls AutoEncoderAnomalyDetection ----"
@@ -36,41 +67,23 @@ jobs:
 
           echo "---- find any .mltbx (up to depth 8) ----"
           find . -maxdepth 8 -type f -name "*.mltbx" -print || true
+
+      # --- Guard: fail if expected file is missing ---
       - name: Assert exact .mltbx exists
         shell: bash
         run: |
           set -euo pipefail
-
           EXPECTED="${{ github.workspace }}/AutoEncoderAnomalyDetection/release/AnomalyDetectionToolbox.mltbx"
-
-          # If exact path exists, we’re good.
           if [[ -f "$EXPECTED" ]]; then
-            echo "Found expected file: $EXPECTED"
-            exit 0
-          fi
-
-          echo "Did not find expected file at: $EXPECTED"
-          echo "Searching for any .mltbx candidates..."
-          mapfile -t CANDIDATES < <(find "${{ github.workspace }}" -maxdepth 8 -type f -name "*.mltbx" | sort)
-
-          if [[ ${#CANDIDATES[@]} -eq 0 ]]; then
-            echo "No .mltbx files found anywhere under the workspace."
+            echo "✅ Found expected file: $EXPECTED"
+          else
+            echo "❌ Missing expected file at: $EXPECTED"
+            echo "Candidates found:"
+            find "${{ github.workspace }}" -maxdepth 8 -type f -name "*.mltbx" -print | sed 's/^/ - /' || true
             exit 1
           fi
 
-          echo "Found ${#CANDIDATES[@]} candidate(s): :"
-          printf ' - %s\n' "${CANDIDATES[@]}"
-
-          if [[ ${#CANDIDATES[@]} -gt 1 ]]; then
-            echo "Ambiguous output (more than one .mltbx)."
-            echo "Either adjust the Buildfile to write the exact expected path, or update the upload step to use the correct file."
-            exit 1
-          fi
-
-          # Exactly one candidate—helpful hint:
-          echo "Hint: If this is the correct file, set your upload 'path: :' to:"
-          echo "  ${CANDIDATES[0]}"
-          exit 1
+      # --- Test/coverage artifacts (keep as you had them) ---
       - name: Upload results artifact
         uses: actions/upload-artifact@v4
         if: always()
@@ -78,6 +91,7 @@ jobs:
           name: test-results
           path: test-results/results.xml
           if-no-files-found: warn
+
       - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
         if: always()
@@ -85,24 +99,30 @@ jobs:
           name: code-coverage
           path: code-coverage/report.xml
           if-no-files-found: warn
+
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: (!cancelled())
         with:
           files: |
             test-results/results.xml
+
       - name: Publish Code coverage
         uses: 5monkeys/cobertura-action@v13
         if: (!cancelled())
         with:
           path: code-coverage/report.xml
           minimum_coverage: 0
+
+      # --- Upload the toolbox artifact (fail if not present) ---
       - name: Upload toolbox artifact
         uses: actions/upload-artifact@v4
         with:
           name: AnomalyDetectionToolbox
           path: ${{ github.workspace }}/AutoEncoderAnomalyDetection/release/AnomalyDetectionToolbox.mltbx
           if-no-files-found: error
+
+      # --- Release only when the workflow runs on a tag (e.g., refs/tags/v1.2.3) ---
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
