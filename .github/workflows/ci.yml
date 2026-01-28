@@ -1,10 +1,17 @@
 permissions:
+  contents: write
   checks: write
-  contents: read
 
 name: Run test task in Build File
 
-on: [push]
+on:
+  push:
+    branches:
+      - '**'    # runs on any branch push
+    tags:
+      - '*'     # also runs on any tag push
+  # Optional: enable manual runs from the UI
+  workflow_dispatch:
 
 jobs:
   my-job:
@@ -102,17 +109,21 @@ jobs:
 
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
+        # If needed, skip on tag-triggered runs (uncomment the line below instead of the current one)
+        # if: (!cancelled() && !startsWith(github.ref, 'refs/tags/'))
         if: (!cancelled())
         with:
           files: |
             test-results/results.xml
 
-     # - name: Publish Code coverage
-     #   uses: 5monkeys/cobertura-action@v13
-     #   if: (!cancelled() && !startsWith(github.ref, 'refs/tags/'))
-     #   with:
-     #     path: code-coverage/report.xml
-      #    minimum_coverage: 0
+      # If you want to publish code coverage only on branch pushes, keep this commented
+      # or use the conditional below:
+      # - name: Publish Code coverage
+      #   uses: 5monkeys/cobertura-action@v13
+      #   if: (!cancelled() && !startsWith(github.ref, 'refs/tags/'))
+      #   with:
+      #     path: code-coverage/report.xml
+      #     minimum_coverage: 0
 
       # --- Upload the toolbox artifact (fail if not present) ---
       - name: Upload toolbox artifact
@@ -128,3 +139,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ github.workspace }}/AutoEncoderAnomalyDetection/release/AnomalyDetectionToolbox.mltbx
+        env:
+          # Use the default GitHub token with write permissions
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
