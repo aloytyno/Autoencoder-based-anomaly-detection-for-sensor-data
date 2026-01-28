@@ -107,12 +107,12 @@ jobs:
           files: |
             test-results/results.xml
 
-      - name: Publish Code coverage
-        uses: 5monkeys/cobertura-action@v13
-        if: (!cancelled() && !startsWith(github.ref, 'refs/tags/'))
-        with:
-          path: code-coverage/report.xml
-          minimum_coverage: 0
+     # - name: Publish Code coverage
+     #   uses: 5monkeys/cobertura-action@v13
+     #   if: (!cancelled() && !startsWith(github.ref, 'refs/tags/'))
+     #   with:
+     #     path: code-coverage/report.xml
+      #    minimum_coverage: 0
 
       # --- Upload the toolbox artifact (fail if not present) ---
       - name: Upload toolbox artifact
