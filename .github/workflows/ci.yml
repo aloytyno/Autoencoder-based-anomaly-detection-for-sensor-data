@@ -109,7 +109,7 @@ jobs:
 
       - name: Publish Code coverage
         uses: 5monkeys/cobertura-action@v13
-        if: (!cancelled())
+        if: (!cancelled() && !startsWith(github.ref, 'refs/tags/'))
         with:
           path: code-coverage/report.xml
           minimum_coverage: 0
