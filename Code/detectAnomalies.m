@@ -1,5 +1,4 @@
 function anomalyidx = detectAnomalies(datapoint)
-
     % Make a buffer to store 100 values
     persistent buffer
     
@@ -12,11 +11,11 @@ function anomalyidx = detectAnomalies(datapoint)
     
     % Perform detection when we have a full buffer
     if ~any(isnan(buffer))
-        
-        % Call the MATLAB function that performs the prediction and
-        % detection of anomalies
+        % Call external model to predict expected values for the buffer
         yhat = anomalyDetectorFunc(buffer);
+        % Compute RMS-like reconstruction error across the buffer
         loss = sqrt(sum((yhat - buffer).^2));
+        % Flag indices where loss exceeds threshold
         anomalyidx = find(loss > 7.5);
         if isempty(anomalyidx)
             anomalyidx = nan;
@@ -24,7 +23,6 @@ function anomalyidx = detectAnomalies(datapoint)
     else
         anomalyidx = nan;
     end
-
 end
 
 %[appendix]{"version":"1.0"}
