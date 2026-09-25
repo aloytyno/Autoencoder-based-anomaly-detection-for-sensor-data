@@ -11,7 +11,7 @@
 %[text] Here we will just load two snapshots of data, the other one is data that represents normal operation, and the other one has an anomaly.
 %[text] NOTE: only normal data is needed to train the anomaly detector
 clear
-load autoencoder_data.mat
+load autoencoder_dat.mat
 %%
 %[text] ## Visualize data
 %[text] Let's visualize the normal data, and the data containing anomalies. We see that the anomalies are not clearly visible, but on a closer inspection, we see that the regular pattern is broken at around 1350 samples.
